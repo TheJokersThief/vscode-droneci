@@ -9,9 +9,13 @@ export class BuildFeedProvider implements vscode.TreeDataProvider<ViewNode> {
     private _onDidChangeTreeData: vscode.EventEmitter<ViewNode | undefined> = new vscode.EventEmitter<ViewNode | undefined>();
     readonly onDidChangeTreeData: vscode.Event<ViewNode | undefined> = this._onDidChangeTreeData.event;
     private droneCfg: APIConfig;
+    private repo: string;
+    private owner: string;
 
     constructor() {
         this.droneCfg = getConfig();
+        this.repo = vscode.workspace.workspaceFolders === undefined ? '' : vscode.workspace.workspaceFolders[0].name;
+        this.owner = this.droneCfg.default_owner;
     }
 
     refresh(): void {
@@ -52,11 +56,15 @@ export class BuildFeedProvider implements vscode.TreeDataProvider<ViewNode> {
 
     private GetFeed(): Promise<ViewNode[]> {
         return new Promise((resolve, reject) => {
-            axios.get<Feed[]>(`${this.droneCfg.server}/api/user/builds`, this.droneCfg.headers)
+            let slug = `${this.owner}/${this.repo}`;
+
+            axios.get<Feed[]>(`${this.droneCfg.server}/api/repos/${slug}/builds`, this.droneCfg.headers)
                 .then(resp => resp.data)
                 .then(data => {
                     let newData: Feed[] = data.map(f => {
-                        return new Feed(f.build, f.name, f.slug, f.uid, f.version, vscode.TreeItemCollapsibleState.Collapsed);
+                        let build = new Build(f.author_avatar, f.author_name, f.created, f.number, f.message, f.status, f.source, f.stages);
+                        let feed = new Feed(build, f.name, slug, f.uid, f.version, vscode.TreeItemCollapsibleState.Collapsed);
+                        return feed;
                     });
 
                     if (newData.length === 0) {
@@ -66,6 +74,13 @@ export class BuildFeedProvider implements vscode.TreeDataProvider<ViewNode> {
                     return resolve(newData);
                 })
                 .catch(error => {
+                    console.log(error.response.status);
+
+                    if (error.response.status == 404){
+                        vscode.window.showInformationMessage("Build feed is empty");
+                        reject(error);
+                        return
+                    }
                     // handle error
                     vscode.window.showErrorMessage("Unable to fetch build feed: " + error);
                     reject(error);

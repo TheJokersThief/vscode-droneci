@@ -6,7 +6,8 @@ import { AxiosRequestConfig } from 'axios';
 export class APIConfig {
     constructor(
         public readonly server: string,
-        public readonly token: string
+        public readonly token: string,
+        public readonly default_owner: string
     ) { }
 
     get headers(): AxiosRequestConfig {
@@ -18,11 +19,12 @@ export const getConfig = () => {
     // Use drone configs from ENV if exist otherwise use vscode's configuration
     let server = process.env['DRONE_SERVER'] || vscode.workspace.getConfiguration('droneci').get<string>('server', '');
     let token = process.env['DRONE_TOKEN'] || vscode.workspace.getConfiguration('droneci').get<string>('token', '');
+    let default_owner = vscode.workspace.getConfiguration('droneci').get<string>('default_owner', '');
     // remove trailing slash
     server = server.match('/$') ? server.substr(0, server.length - 1) : server;
     // auto add https prefix
     server = server.match('^(http)s?\:\/\/') ? server : 'https://' + server;
-    return new APIConfig(server, token);
+    return new APIConfig(server, token, default_owner);
 };
 
 function EmojiStatus(status: string): string {
@@ -31,6 +33,8 @@ function EmojiStatus(status: string): string {
             return '✅';
         case 'failure':
             return '❌';
+        case 'error':
+            return '❌';
         case 'running':
             return '🕐';
         case 'killed':
@@ -38,6 +42,7 @@ function EmojiStatus(status: string): string {
         case 'skipped':
             return '🚫';
         default:
+            console.log(`Unknown status: ${status}`);
             return '❔';
     }
 }
@@ -52,9 +57,9 @@ export class Feed extends ViewNode {
         public readonly uid: string,
         public readonly version: Number,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly command?: vscode.Command
+        public readonly command?: vscode.Command,
     ) {
-        super(`${EmojiStatus(build.status)}${build.number} ${emojify(build.message)}`, collapsibleState);
+        super(`${EmojiStatus(build.status)}  ${build.number} ${emojify(build.message)}`, collapsibleState);
     }
 
 
@@ -86,13 +91,19 @@ export class Build extends ViewNode {
         public readonly author_name: string,
         public readonly created: Number,
         public readonly number: Number,
-        public readonly link: string,
         public readonly message: string,
         public readonly status: string,
         public readonly source: string,
         public readonly stages: Stage[],
     ) {
         super(`${author_name}`, vscode.TreeItemCollapsibleState.Collapsed);
+    }
+
+    get uri(): string {
+        return "";
+    }
+    get link(): string {
+        return "";
     }
     contextValue = 'build';
 }

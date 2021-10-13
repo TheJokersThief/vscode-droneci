@@ -139,6 +139,11 @@
                     "type": "number",
                     "default": 5,
                     "description": "Build feed refresh interval in minutes"
+                },
+                "droneci.default_owner": {
+                    "type": "string",
+                    "default": null,
+                    "description": "The default owner/organisation for repos"
                 }
             }
         }
