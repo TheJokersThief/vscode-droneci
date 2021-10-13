@@ -23,3 +23,24 @@ This extension contributes the following settings:
 -----------------------------------------------------------------------------------------------------------
 
 **Enjoy!**
+
+# Installing from source:
+
+Install vsce:
+
+Make sure you have Node.js installed. Then run:
+
+```
+npm install -g vsce yarn
+```
+
+Check out the GitHub repo/branch you want.
+
+Depending on the project, you may need to install its dependencies (npm install or whatever package manager you use). Some can be packaged without dependencies.
+
+Run the following in the root of the project (see the official docs for more detail about the process):
+
+```
+vsce package  # Generates a .vsix file
+code --install-extension droneci-0.0.11.vsix
+```
